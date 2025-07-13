@@ -101,4 +101,23 @@ defmodule Admin.Accounts do
   def change_user(%User{} = user, attrs \\ %{}) do
     User.changeset(user, attrs)
   end
+
+  @doc """
+  Gets a user by criteria.
+
+  Accepts a keyword list like `[email: "user@example.com"]`.
+
+  Returns `nil` if no user is found.
+
+  ## Examples
+
+      iex> get_user_by_criteria(email: "foo@example.com")
+      %User{}
+
+      iex> get_user_by_criteria(id: 999)
+      nil
+  """
+  def get_user_by_criteria(criteria) when is_list(criteria) do
+    Repo.get_by(User, criteria)
+  end
 end

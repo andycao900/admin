@@ -6,10 +6,10 @@ defmodule AdminWeb.Plugs.RequireAuth do
   def init(opts), do: opts
 
   def call(conn, _opts) do
-    if get_session(conn, :current_user) do
+    if get_session(conn, :current_user_id) do
       conn
     else
-      redirect(conn, external: Routes.auth_url(conn, :request, "auth0")) |> halt()
+      redirect(conn, external: Routes.auth_path(conn, :request, "auth0")) |> halt()
     end
   end
 end
