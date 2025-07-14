@@ -3,7 +3,7 @@ defmodule AdminWeb.AuthController do
 
   plug Ueberauth, callback_methods: ["GET"]
 
-  alias AdminWeb.Router.Helpers, as: Routes
+  # alias AdminWeb.Router.Helpers, as: Routes
   alias Admin.Accounts
 
   def callback(
