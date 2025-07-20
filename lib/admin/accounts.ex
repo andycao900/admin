@@ -118,6 +118,32 @@ defmodule Admin.Accounts do
       nil
   """
   def get_user_by_criteria(criteria) when is_list(criteria) do
-    Repo.get_by(User, criteria)
+    case Repo.get_by(User, criteria) do
+      nil -> {:error, :not_found}
+      user -> {:ok, user}
+    end
+  end
+
+  def create_user_with_auth0(user_params) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.run(:db_user, fn _repo, _changes ->
+      create_user(user_params)
+    end)
+    |> Ecto.Multi.run(:auth0_check_and_create, fn _repo, %{db_user: db_user} ->
+      case Admin.Auth0.Auth0User.get_user_by_email(db_user.email) do
+        {:ok, _} ->
+          {:ok, :already_exists}
+
+        {:error, :not_found} ->
+          case Admin.Auth0.Auth0User.create_user(user_params) do
+            {:ok, _auth0_user} -> {:ok, :created}
+            {:error, reason} -> {:error, {:auth0_create_failed, reason}}
+          end
+
+        {:error, reason} ->
+          {:error, {:auth0_lookup_failed, reason}}
+      end
+    end)
+    |> Repo.transaction()
   end
 end

@@ -22,19 +22,64 @@ defmodule AdminWeb.UserControllerTest do
   end
 
   describe "create user" do
-    test "redirects to show when data is valid", %{conn: conn} do
-      conn = post(conn, ~p"/users", user: @create_attrs)
+    import Mock
 
-      assert %{id: id} = redirected_params(conn)
-      assert redirected_to(conn) == ~p"/users/#{id}"
+    test "redirects to show when data is valid and synced to Auth0", %{conn: conn} do
+      with_mock Admin.Auth0.Auth0User, [
+        get_user_by_email: fn _ -> {:error, :not_found} end,
+        create_user: fn _ -> {:ok, %{}} end
+      ] do
+        conn = post(conn, ~p"/users", user: @create_attrs)
 
-      conn = get(conn, ~p"/users/#{id}")
-      assert html_response(conn, 200) =~ "User #{id}"
+        assert %{id: id} = redirected_params(conn)
+        assert redirected_to(conn) == ~p"/users/#{id}"
+        assert get_flash(conn, :info) =~ "User created successfully and synced to Auth0."
+
+        conn = get(conn, ~p"/users/#{id}")
+        assert html_response(conn, 200) =~ "User #{id}"
+      end
     end
 
-    test "renders errors when data is invalid", %{conn: conn} do
+    test "redirects to show when data is valid and Auth0 user already exists", %{conn: conn} do
+      with_mock Admin.Auth0.Auth0User, [
+        get_user_by_email: fn _ -> {:ok, %{}} end
+      ] do
+        conn = post(conn, ~p"/users", user: @create_attrs)
+
+        assert %{id: id} = redirected_params(conn)
+        assert redirected_to(conn) == ~p"/users/#{id}"
+        assert get_flash(conn, :info) =~ "User created in DB. Auth0 user already exists."
+
+        conn = get(conn, ~p"/users/#{id}")
+        assert html_response(conn, 200) =~ "User #{id}"
+      end
+    end
+
+    test "renders errors when DB user creation fails", %{conn: conn} do
       conn = post(conn, ~p"/users", user: @invalid_attrs)
       assert html_response(conn, 200) =~ "New User"
+      assert html_response(conn, 200) =~ "can't be blank"
+    end
+
+    test "renders errors and flash message when Auth0 user creation fails", %{conn: conn} do
+      with_mock Admin.Auth0.Auth0User, [
+        get_user_by_email: fn _ -> {:error, :not_found} end,
+        create_user: fn _ -> {:error, "Auth0 create error"} end
+      ] do
+        conn = post(conn, ~p"/users", user: @create_attrs)
+        assert html_response(conn, 200) =~ "New User"
+        assert get_flash(conn, :error) =~ "Failed to create user in Auth0: \"Auth0 create error\""
+      end
+    end
+
+    test "renders errors and flash message when Auth0 user lookup fails", %{conn: conn} do
+      with_mock Admin.Auth0.Auth0User, [
+        get_user_by_email: fn _ -> {:error, "Auth0 lookup error"} end
+      ] do
+        conn = post(conn, ~p"/users", user: @create_attrs)
+        assert html_response(conn, 200) =~ "New User"
+        assert get_flash(conn, :error) =~ "Failed to check Auth0 user: \"Auth0 lookup error\""
+      end
     end
   end
 

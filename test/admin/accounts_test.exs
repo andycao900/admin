@@ -55,5 +55,77 @@ defmodule Admin.AccountsTest do
       user = user_fixture()
       assert %Ecto.Changeset{} = Accounts.change_user(user)
     end
+
+    test "get_user_by_criteria/1 returns {:ok, user} when user is found" do
+      user = user_fixture()
+      assert {:ok, ^user} = Accounts.get_user_by_criteria(email: user.email)
+    end
+
+    test "get_user_by_criteria/1 returns {:error, :not_found} when user is not found" do
+      assert {:error, :not_found} = Accounts.get_user_by_criteria(email: "nonexistent@example.com")
+    end
+
+    describe "create_user_with_auth0/1" do
+      import Mock
+
+      test "creates user in DB and Auth0 when both succeed" do
+        valid_attrs = %{email: "new_user@example.com", password: "password123"}
+
+        with_mock Admin.Auth0.Auth0User, [
+          get_user_by_email: fn _ -> {:error, :not_found} end,
+          create_user: fn _ -> {:ok, %{}} end
+        ] do
+          assert {:ok, %{db_user: %User{}, auth0_check_and_create: :created}} = Accounts.create_user_with_auth0(valid_attrs)
+          assert Accounts.get_user_by_criteria(email: "new_user@example.com") == {:ok, Accounts.get_user_by_criteria(email: "new_user@example.com") |> elem(1)}
+        end
+      end
+
+      test "creates user in DB and returns :already_exists if Auth0 user already exists" do
+        valid_attrs = %{email: "existing_auth0_user@example.com", password: "password123"}
+
+        with_mock Admin.Auth0.Auth0User, [
+          get_user_by_email: fn _ -> {:ok, %{}} end
+        ] do
+          assert {:ok, %{db_user: %User{}, auth0_check_and_create: :already_exists}} = Accounts.create_user_with_auth0(valid_attrs)
+          assert Accounts.get_user_by_criteria(email: "existing_auth0_user@example.com") == {:ok, Accounts.get_user_by_criteria(email: "existing_auth0_user@example.com") |> elem(1)}
+        end
+      end
+
+      test "returns error if DB user creation fails" do
+        invalid_attrs = %{email: nil} # Invalid email to cause DB creation failure
+
+        with_mock Admin.Auth0.Auth0User, [
+          get_user_by_email: fn _ -> {:error, :not_found} end,
+          create_user: fn _ -> {:ok, %{}} end
+        ] do
+          assert {:error, :db_user, %Ecto.Changeset{}, _} = Accounts.create_user_with_auth0(invalid_attrs)
+        end
+      end
+
+      test "returns error if Auth0 user creation fails" do
+        valid_attrs = %{email: "auth0_fail@example.com", password: "password123"}
+
+        with_mock Admin.Auth0.Auth0User, [
+          get_user_by_email: fn _ -> {:error, :not_found} end,
+          create_user: fn _ -> {:error, "Auth0 error"} end
+        ] do
+          assert {:error, :auth0_check_and_create, {:auth0_create_failed, "Auth0 error"}, _} = Accounts.create_user_with_auth0(valid_attrs)
+          # Ensure DB user is rolled back
+          assert Accounts.get_user_by_criteria(email: "auth0_fail@example.com") == {:error, :not_found}
+        end
+      end
+
+      test "returns error if Auth0 lookup fails" do
+        valid_attrs = %{email: "auth0_lookup_fail@example.com", password: "password123"}
+
+        with_mock Admin.Auth0.Auth0User, [
+          get_user_by_email: fn _ -> {:error, "Lookup error"} end
+        ] do
+          assert {:error, :auth0_check_and_create, {:auth0_lookup_failed, "Lookup error"}, _} = Accounts.create_user_with_auth0(valid_attrs)
+          # Ensure DB user is rolled back
+          assert Accounts.get_user_by_criteria(email: "auth0_lookup_fail@example.com") == {:error, :not_found}
+        end
+      end
+    end
   end
 end
