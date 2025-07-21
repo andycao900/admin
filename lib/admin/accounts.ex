@@ -112,10 +112,10 @@ defmodule Admin.Accounts do
   ## Examples
 
       iex> get_user_by_criteria(email: "foo@example.com")
-      %User{}
+      {:ok, %User{}}
 
       iex> get_user_by_criteria(id: 999)
-      nil
+      {:error, :not_found}
   """
   def get_user_by_criteria(criteria) when is_list(criteria) do
     case Repo.get_by(User, criteria) do

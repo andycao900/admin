@@ -48,6 +48,7 @@ defmodule Admin.MixProject do
        compile: false,
        depth: 1},
       {:jason, "~> 1.4"},
+      {:openfga_elixir, git: "https://github.com/msutkowski/fga-elixir-sdk.git", tag: "main"},
       {:phoenix, "~> 1.7.21"},
       {:phoenix_ecto, "~> 4.5"},
       {:phoenix_html, "~> 4.1"},
@@ -55,6 +56,7 @@ defmodule Admin.MixProject do
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.0"},
       {:postgrex, ">= 0.0.0"},
+      {:req, "~> 0.5"}, # HTTP client for direct OpenFGA API calls
       {:swoosh, "~> 1.5"},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 1.0"},

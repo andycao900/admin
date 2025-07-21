@@ -77,6 +77,15 @@ config :auth0_ex,
   mgmt_client_secret: System.get_env("AUTH0_MGMT_CLIENT_SECRET"),
   http_opts: []
 
+config :admin, :openfga,
+  base_url: System.get_env("FGA_API_URL") || "https://api.us1.fga.dev",
+  store_id: System.get_env("FGA_STORE_ID"),
+  model_id: System.get_env("FGA_MODEL_ID"),
+  client_id: System.get_env("AUTH0_FGA_CLIENT_ID"),
+  client_secret: System.get_env("AUTH0_FGA_CLIENT_SECRET"),
+  audience: System.get_env("AUTH0_FGA_AUDIENCE") || "https://api.us1.fga.dev/"
+
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

@@ -1,3 +1,4 @@
+Note: FGA need add a client for FGA console, not from auth0 console.
 Elixir project that integrates with **Auth0 via `auth0_ex`**, including:
 
 * Project setup

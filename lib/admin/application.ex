@@ -14,6 +14,7 @@ defmodule Admin.Application do
       {Phoenix.PubSub, name: Admin.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Admin.Finch},
+      Admin.Auth.OpenFgaTokenCache,
       # Start a worker by calling: Admin.Worker.start_link(arg)
       # {Admin.Worker, arg},
       # Start to serve requests, typically the last entry

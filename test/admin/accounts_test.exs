@@ -75,8 +75,8 @@ defmodule Admin.AccountsTest do
           get_user_by_email: fn _ -> {:error, :not_found} end,
           create_user: fn _ -> {:ok, %{}} end
         ] do
-          assert {:ok, %{db_user: %User{}, auth0_check_and_create: :created}} = Accounts.create_user_with_auth0(valid_attrs)
-          assert Accounts.get_user_by_criteria(email: "new_user@example.com") == {:ok, Accounts.get_user_by_criteria(email: "new_user@example.com") |> elem(1)}
+          assert {:ok, %{db_user: %User{} user, auth0_check_and_create: :created}} = Accounts.create_user_with_auth0(valid_attrs)
+          assert Accounts.get_user_by_criteria(email: "new_user@example.com") == {:ok, user}
         end
       end
 

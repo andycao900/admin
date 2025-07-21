@@ -25,12 +25,12 @@ defmodule AdminWeb.AuthController do
     # }
 
     case Accounts.get_user_by_criteria(email: user_email) do
-      nil ->
+      {:error, :not_found} ->
         conn
         |> put_flash(:error, "No matching user found.")
         |> redirect(to: "/")
 
-      user ->
+      {:ok, user} ->
         # Optional: build a session struct if needed
         # user_info = %{id: user.id, email: user.email, name: user.name}
 
